@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Friction Practice Test</title>
+<style>
+  :root {
+    --bg: #f4f7fb;
+    --card: #ffffff;
+    --primary: #1e40af;
+    --primary-light: #dbeafe;
+    --correct: #16a34a;
+    --incorrect: #dc2626;
+    --text: #1f2937;
+    --muted: #6b7280;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 20px;
+    line-height: 1.5;
+  }
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  h1 { color: var(--primary); margin: 0 0 8px; }
+  .subtitle { color: var(--muted); font-size: 0.95rem; }
+  .progress-bar {
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    margin: 16px 0;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--primary);
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .score-display {
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--primary);
+  }
+  .question-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid #e5e7eb;
+  }
+  .q-number {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .q-text {
+    font-size: 1.05rem;
+    font-weight: 500;
+    margin: 6px 0 14px;
+  }
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .option {
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: #fff;
+  }
+  .option:hover:not(.disabled) {
+    border-color: var(--primary);
+    background: var(--primary-light);
+  }
+  .option.selected {
+    border-color: var(--primary);
+    background: var(--primary-light);
+  }
+  .option.correct {
+    border-color: var(--correct);
+    background: #dcfce7;
+  }
+  .option.incorrect {
+    border-color: var(--incorrect);
+    background: #fee2e2;
+  }
+  .option.disabled {
+    cursor: default;
+    opacity: 0.85;
+  }
+  .feedback {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback.correct-fb { background: #dcfce7; color: #166534; }
+  .feedback.incorrect-fb { background: #fee2e2; color: #991b1b; }
+  .short-answer {
+    width: 100%;
+    min-height: 70px;
+    padding: 10px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: vertical;
+  }
+  .short-answer:focus { outline: none; border-color: var(--primary); }
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    gap: 12px;
+  }
+  button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+  }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-secondary {
+    background: #e5e7eb;
+    color: var(--text);
+  }
+  .btn-secondary:hover { background: #d1d5db; }
+  .btn-success {
+    background: var(--correct);
+    color: white;
+  }
+  .results {
+    text-align: center;
+    padding: 30px;
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .results h2 { color: var(--primary); }
+  .big-score {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 10px 0;
+  }
+  .review-item {
+    text-align: left;
+    margin: 12px 0;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border-left: 4px solid #d1d5db;
+  }
+  .review-item.correct { border-left-color: var(--correct); }
+  .review-item.incorrect { border-left-color: var(--incorrect); }
+  .hidden { display: none !important; }
+  .section-title {
+    font-size: 1.1rem;
+    color: var(--primary);
+    margin: 24px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--primary-light);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Interactive Friction Practice Test</h1>
+    <div class="subtitle">Based on Study Guide, Vocabulary, Notes & Investigations</div>
+  </header>
+
+  <div id="quiz-area">
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    <div class="score-display" id="score-display">Question 1 of 32</div>
+    <div id="questions-container"></div>
+    <div class="controls">
+      <button class="btn-secondary" id="prev-btn" onclick="prevQuestion()">← Previous</button>
+      <button class="btn-primary" id="next-btn" onclick="nextQuestion()">Next →</button>
+    </div>
+  </div>
+
+  <div id="results-area" class="hidden">
+    <div class="results">
+      <h2>Test Complete!</h2>
+      <div class="big-score" id="final-score">0 / 32</div>
+      <p id="final-message">Keep reviewing the concepts!</p>
+      <button class="btn-success" onclick="restartQuiz()" style="margin-top:16px;">Try Again</button>
+      <button class="btn-secondary" onclick="showReview()" style="margin-top:8px; margin-left:8px;">Review Answers</button>
+      <div id="review-container" style="margin-top:24px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  // Part A: Vocabulary
+  { type: 'mc', section: 'Vocabulary', q: 'Force that is applied to the object from an outside force.', options: ['applied force', 'contact force', 'balanced force', 'normal force'], answer: 0 },
+  { type: 'mc', section: 'Vocabulary', q: 'A number that describes the degree of mechanical and molecular interaction between two surfaces.', options: ['coefficient of friction', 'coefficient of restitution', 'coefficient of sliding', 'velocity'], answer: 0 },
+  { type: 'mc', section: 'Vocabulary', q: 'The force that prevents two objects from easily moving against one another.', options: ['normal force', 'balanced force', 'frictional force', 'centripetal force'], answer: 2 },
+  { type: 'mc', section: 'Vocabulary', q: 'The rate an object changes its direction.', options: ['distance', 'gravity', 'velocity', 'energy'], answer: 2 },
+  { type: 'mc', section: 'Vocabulary', q: 'Force of gravity on that object when pulling an object across the table.', options: ['frictional force', 'normal reaction force', 'secondary reaction force', 'kinetic friction force'], answer: 1 },
+  { type: 'mc', section: 'Vocabulary', q: 'The rate an object changes velocity.', options: ['distance', 'time', 'displacement', 'acceleration'], answer: 3 },
+
+  // Part B: Concepts
+  { type: 'mc', section: 'Concepts', q: 'Speed indicates:', options: ['how much distance is traveled in a given time', 'the direction of motion', 'the change in velocity', 'the force applied'], answer: 0 },
+  { type: 'mc', section: 'Concepts', q: 'Velocity is a measure of:', options: ['distance only', 'the magnitude of distance per time as well as the direction of the motion', 'only the speed', 'acceleration'], answer: 1 },
+  { type: 'mc', section: 'Concepts', q: 'A change in velocity occurs when an object:', options: ['only changes speed', 'only changes direction', 'changes speed or changes direction', 'stays at constant speed'], answer: 2 },
+  { type: 'mc', section: 'Concepts', q: 'How does frictional force affect motion?', options: ['It increases the velocity of an object', 'It resists motion and decreases the velocity/speed of an object', 'It has no effect on motion', 'It only affects direction'], answer: 1 },
+  { type: 'mc', section: 'Concepts', q: 'Frictional force is ________ of velocity.', options: ['dependent', 'independent', 'proportional', 'inversely proportional'], answer: 1 },
+  { type: 'mc', section: 'Concepts', q: 'As the weight of a load increases, the frictional force:', options: ['decreases', 'stays the same', 'increases', 'becomes zero'], answer: 2 },
+  { type: 'mc', section: 'Concepts', q: 'Surface area is ________ of frictional force. As surface area increases, frictional force remains ________.', options: ['dependent; increasing', 'independent; constant', 'proportional; increasing', 'independent; decreasing'], answer: 1 },
+  { type: 'mc', section: 'Concepts', q: 'The smoother the two surfaces, the ________ the frictional force. The less smooth the two surfaces, the ________ the frictional force.', options: ['more; less', 'less; more', 'same; same', 'greater; smaller'], answer: 1 },
+
+  // Short answer
+  { type: 'short', section: 'Concepts', q: 'What is the relationship between speed, velocity, and acceleration?', answer: 'Speed is distance traveled in a given time. Velocity is speed with direction. Acceleration is the rate of change of velocity (change in speed or direction).' },
+  { type: 'short', section: 'Notes', q: 'What does friction do? (from notes)', answer: 'Friction opposes motion – it transforms or transfers energy.' },
+
+  // True/False
+  { type: 'tf', section: 'True/False', q: 'Motion occurs when an object changes its position relative to a reference point.', answer: true },
+  { type: 'tf', section: 'True/False', q: 'Distance is the distance and direction of an object\'s change in position from the starting point.', answer: false, note: 'That is displacement. Distance is how far an object has traveled.' },
+  { type: 'tf', section: 'True/False', q: 'Average speed = total distance traveled / total time of travel.', answer: true },
+  { type: 'tf', section: 'True/False', q: 'Instantaneous speed is the speed at a given point in time (like looking at the speedometer).', answer: true },
+  { type: 'tf', section: 'True/False', q: 'Constant speed means the speed does not change (like cruise control).', answer: true },
+  { type: 'tf', section: 'True/False', q: 'Frictional force depends on the velocity of the object.', answer: false, note: 'Frictional force is independent of velocity.' },
+  { type: 'tf', section: 'True/False', q: 'When an object is pulled at constant velocity, the frictional force equals the applied force.', answer: true },
+  { type: 'tf', section: 'True/False', q: 'Positive acceleration means speed increases; negative acceleration means speed decreases.', answer: true },
+
+  // Application
+  { type: 'short', section: 'Application', q: 'After you stopped pushing the penny, what happened to its motion? What caused it to slow to a stop?', answer: 'The penny slowed down and stopped. Frictional force (friction with the table) caused it to slow to a stop.' },
+  { type: 'short', section: 'Application', q: 'In the penny experiment, did the penny go through positive acceleration, negative acceleration, or both? When?', answer: 'Both. Positive acceleration when pushed (speed increased). Negative acceleration after pushing stopped (friction slowed it down).' },
+  { type: 'short', section: 'Application', q: 'When pulling the wood block at a steady (constant) velocity between the lines, what is the acceleration of the block?', answer: 'Acceleration = 0 (velocity is constant; no change in speed or direction).' },
+  { type: 'short', section: 'Application', q: 'Why is the frictional force equal to the applied force when the block moves at constant velocity? (Use ΣF = ma)', answer: 'Because a = 0, ΣF = 0. So F_friction + F_applied = 0, meaning F_friction = F_applied (equal magnitude, opposite direction).' },
+  { type: 'short', section: 'Application', q: 'In Investigation Two (different velocities for the same distance), what relationship did the data show between velocity and frictional force?', answer: 'Frictional force is independent of velocity. The force stayed about the same as velocity changed. Graph would be a horizontal line.' },
+  { type: 'short', section: 'Application', q: 'How does increasing the weight of the load affect the frictional force? How does changing the surface area affect it?', answer: 'Weight increases frictional force. Surface area is independent — frictional force stays constant as surface area changes.' },
+
+  // Calculations
+  { type: 'calc', section: 'Calculations', q: 'A wood block is pulled 80 cm in 8 seconds at constant velocity. What is the average velocity in m/s?', answer: '0.1', unit: 'm/s', hint: 'Convert 80 cm to 0.8 m, then divide by 8 s.' },
+  { type: 'calc', section: 'Calculations', q: 'In Investigation Two, distance = 0.5 m. Velocity for Trial 1 (time = 2 s)?', answer: '0.25', unit: 'm/s', hint: '0.5 m ÷ 2 s' },
+  { type: 'calc', section: 'Calculations', q: 'In Investigation Two, distance = 0.5 m. Velocity for Trial 4 (time = 8 s)?', answer: '0.0625', unit: 'm/s', hint: '0.5 m ÷ 8 s' },
+  { type: 'short', section: 'Calculations', q: 'What do you expect the frictional force values to be across the different velocity trials in Investigation Two? Why?', answer: 'Approximately the same for all trials because frictional force is independent of velocity.' }
+];
+
+let current = 0;
+let answers = new Array(questions.length).fill(null);
+let scored = new Array(questions.length).fill(false);
+
+function renderQuestion() {
+  const q = questions[current];
+  const container = document.getElementById('questions-container');
+  const progress = ((current) / questions.length) * 100;
+  document.getElementById('progress').style.width = progress + '%';
+  document.getElementById('score-display').textContent = `Question ${current + 1} of ${questions.length}  •  ${q.section}`;
+
+  let html = `<div class="question-card">
+    <div class="q-number">${q.section} • Question ${current + 1}</div>
+    <div class="q-text">${q.q}</div>`;
+
+  if (q.type === 'mc') {
+    html += '<div class="options">';
+    q.options.forEach((opt, i) => {
+      const letter = String.fromCharCode(65 + i);
+      const selected = answers[current] === i ? 'selected' : '';
+      html += `<div class="option ${selected}" onclick="selectOption(${i})" data-index="${i}">${letter}) ${opt}</div>`;
+    });
+    html += '</div>';
+  } else if (q.type === 'tf') {
+    html += `<div class="options">
+      <div class="option ${answers[current] === true ? 'selected' : ''}" onclick="selectTF(true)">True</div>
+      <div class="option ${answers[current] === false ? 'selected' : ''}" onclick="selectTF(false)">False</div>
+    </div>`;
+  } else if (q.type === 'short' || q.type === 'calc') {
+    const val = answers[current] || '';
+    const placeholder = q.type === 'calc' ? 'Enter your answer' : 'Type your answer here...';
+    html += `<textarea class="short-answer" placeholder="${placeholder}" oninput="saveShort(this.value)">${val}</textarea>`;
+    if (q.hint) html += `<div style="font-size:0.85rem; color:var(--muted); margin-top:6px;">Hint: ${q.hint}</div>`;
+  }
+
+  html += `<div class="feedback" id="feedback"></div></div>`;
+  container.innerHTML = html;
+
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').textContent = current === questions.length - 1 ? 'Finish Test' : 'Next →';
+
+  if (answers[current] !== null && scored[current]) {
+    showFeedback();
+  }
+}
+
+function selectOption(index) {
+  if (scored[current]) return;
+  answers[current] = index;
+  scored[current] = true;
+  document.querySelectorAll('.option').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.option')[index].classList.add('selected');
+  showFeedback();
+}
+
+function selectTF(val) {
+  if (scored[current]) return;
+  answers[current] = val;
+  scored[current] = true;
+  document.querySelectorAll('.option').forEach(el => el.classList.remove('selected'));
+  const opts = document.querySelectorAll('.option');
+  if (val === true) opts[0].classList.add('selected');
+  else opts[1].classList.add('selected');
+  showFeedback();
+}
+
+function saveShort(val) {
+  answers[current] = val;
+}
+
+function showFeedback() {
+  const q = questions[current];
+  const fb = document.getElementById('feedback');
+  let isCorrect = false;
+  let msg = '';
+
+  if (q.type === 'mc') {
+    isCorrect = answers[current] === q.answer;
+    const correctLetter = String.fromCharCode(65 + q.answer);
+    msg = isCorrect ? 'Correct!' : `Incorrect. The correct answer is ${correctLetter}) ${q.options[q.answer]}`;
+    document.querySelectorAll('.option').forEach((el, i) => {
+      el.classList.add('disabled');
+      if (i === q.answer) el.classList.add('correct');
+      else if (i === answers[current] && !isCorrect) el.classList.add('incorrect');
+    });
+  } else if (q.type === 'tf') {
+    isCorrect = answers[current] === q.answer;
+    msg = isCorrect ? 'Correct!' : `Incorrect. The statement is ${q.answer ? 'True' : 'False'}. ${q.note || ''}`;
+    document.querySelectorAll('.option').forEach(el => el.classList.add('disabled'));
+    const opts = document.querySelectorAll('.option');
+    if (q.answer) opts[0].classList.add('correct');
+    else opts[1].classList.add('correct');
+    if (!isCorrect) {
+      if (answers[current]) opts[0].classList.add('incorrect');
+      else opts[1].classList.add('incorrect');
+    }
+  } else {
+    isCorrect = true;
+    msg = `<strong>Model answer:</strong> ${q.answer}${q.unit ? ' ' + q.unit : ''}`;
+    scored[current] = true;
+  }
+
+  fb.className = 'feedback show ' + (isCorrect ? 'correct-fb' : 'incorrect-fb');
+  fb.innerHTML = msg;
+}
+
+function nextQuestion() {
+  if (current < questions.length - 1) {
+    current++;
+    renderQuestion();
+  } else {
+    finishQuiz();
+  }
+}
+
+function prevQuestion() {
+  if (current > 0) {
+    current--;
+    renderQuestion();
+  }
+}
+
+function calculateScore() {
+  let score = 0;
+  let totalScorable = 0;
+  questions.forEach((q, i) => {
+    if (q.type === 'mc' || q.type === 'tf') {
+      totalScorable++;
+      if (q.type === 'mc' && answers[i] === q.answer) score++;
+      if (q.type === 'tf' && answers[i] === q.answer) score++;
+    }
+  });
+  return { score, total: totalScorable, full: questions.length };
+}
+
+function finishQuiz() {
+  const { score, total } = calculateScore();
+  document.getElementById('quiz-area').classList.add('hidden');
+  document.getElementById('results-area').classList.remove('hidden');
+  document.getElementById('final-score').textContent = `${score} / ${total} auto-graded`;
+  const pct = Math.round((score / total) * 100);
+  let msg = 'Keep reviewing the study guide and investigations!';
+  if (pct >= 90) msg = 'Excellent work! You have a strong grasp of friction concepts.';
+  else if (pct >= 75) msg = 'Good job! Review any missed questions and the short-answer sections.';
+  else if (pct >= 60) msg = 'Solid effort. Focus on the relationships between weight, surface area, velocity, and friction.';
+  document.getElementById('final-message').textContent = msg + ` (Short-answer questions are for self-check.)`;
+}
+
+function showReview() {
+  const container = document.getElementById('review-container');
+  let html = '<h3>Answer Review</h3>';
+  questions.forEach((q, i) => {
+    let correct = false;
+    let userAns = answers[i];
+    let displayAns = '';
+    if (q.type === 'mc') {
+      correct = userAns === q.answer;
+      displayAns = userAns !== null ? q.options[userAns] : '(not answered)';
+    } else if (q.type === 'tf') {
+      correct = userAns === q.answer;
+      displayAns = userAns !== null ? (userAns ? 'True' : 'False') : '(not answered)';
+    } else {
+      displayAns = userAns || '(not answered)';
+      correct = true;
+    }
+    html += `<div class="review-item ${correct && (q.type === 'mc' || q.type === 'tf') ? 'correct' : (q.type === 'mc' || q.type === 'tf') ? 'incorrect' : ''}">
+      <strong>Q${i+1}:</strong> ${q.q}<br>
+      <span style="color:var(--muted);">Your answer: ${displayAns}</span><br>
+      <span style="color:var(--correct);">Correct: ${q.type === 'mc' ? q.options[q.answer] : q.type === 'tf' ? (q.answer ? 'True' : 'False') : q.answer}</span>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function restartQuiz() {
+  current = 0;
+  answers = new Array(questions.length).fill(null);
+  scored = new Array(questions.length).fill(false);
+  document.getElementById('quiz-area').classList.remove('hidden');
+  document.getElementById('results-area').classList.add('hidden');
+  document.getElementById('review-container').innerHTML = '';
+  renderQuestion();
+}
+
+renderQuestion();
+</script>
+</body>
+</html>
